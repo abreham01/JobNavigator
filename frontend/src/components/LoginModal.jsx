@@ -15,7 +15,10 @@ export default function LoginModal({ onSuccess }) {
     setLoading(true)
     try {
       // Use a fresh axios instance to avoid the 401 interceptor firing on this call
-      const { data } = await axios.post('/api/auth/set-session',
+      const baseUrl = import.meta.env.VITE_API_URL 
+        ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL : `${import.meta.env.VITE_API_URL}/api`)
+        : '/api'
+      const { data } = await axios.post(`${baseUrl}/auth/set-session`,
         { api_key: apiKey },
         { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
       )

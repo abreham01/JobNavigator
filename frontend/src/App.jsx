@@ -55,7 +55,10 @@ function App() {
   // If 401, the user has an invalid or missing key → show login modal.
   useEffect(() => {
     const key = localStorage.getItem('jobnavigator_api_key') || ''
-    axios.post('/api/auth/set-session',
+    const baseUrl = import.meta.env.VITE_API_URL 
+      ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL : `${import.meta.env.VITE_API_URL}/api`)
+      : '/api'
+    axios.post(`${baseUrl}/auth/set-session`,
       { api_key: key },
       { withCredentials: true }
     ).catch((err) => {
