@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.models.db import create_tables, SessionLocal, Setting, JobRun
 from backend.seed import run_seeds
-from backend.config import INITIAL_API_KEY, TELEGRAM_BOT_TOKEN
+from backend.config import INITIAL_API_KEY, TELEGRAM_BOT_TOKEN, FRONTEND_URL, COOKIE_SAMESITE, COOKIE_SECURE
 from backend.job_monitor import launch_background, JobAlreadyRunningError, get_all_running, is_running, _get_running_by_job_type, cleanup_stale_runs
 
 from backend.api.routes_settings import router as settings_router
@@ -83,16 +83,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow dashboard frontend (configurable via ALLOWED_ORIGINS env var)
+# CORS — allow dashboard frontend (configurable via FRONTEND_URL and ALLOWED_ORIGINS env vars)
 import os as _os_cors
-_allowed_origins = _os_cors.getenv(
-    "ALLOWED_ORIGINS",
-    "http://localhost,http://localhost:3000,http://localhost:80"
-).split(",")
+_allowed_origins = [o.strip() for o in FRONTEND_URL.split(",") if o.strip()]
+_extra_origins = _os_cors.getenv("ALLOWED_ORIGINS", "")
+if _extra_origins:
+    _allowed_origins.extend([o.strip() for o in _extra_origins.split(",") if o.strip()])
+# Add common dev server domains for convenient local fallback
+_allowed_origins.extend(["http://localhost", "http://localhost:5173", "http://localhost:3000", "http://localhost:80"])
+_allowed_origins = list(dict.fromkeys(_allowed_origins))
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in _allowed_origins if o.strip()],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -185,9 +188,9 @@ async def set_session(body: dict, response: _Response):
             key="jn_session",
             value=cookie_value,
             httponly=True,
-            samesite="strict",
+            samesite=COOKIE_SAMESITE,
             max_age=60 * 60 * 24 * 30,  # 30 days
-            secure=False,  # set True when deployed over HTTPS
+            secure=COOKIE_SECURE,
         )
         return {"ok": True}
     finally:
@@ -196,7 +199,12 @@ async def set_session(body: dict, response: _Response):
 
 @app.post("/api/auth/logout", tags=["auth"], summary="Clear session cookie")
 async def logout(response: _Response):
-    response.delete_cookie(key="jn_session", samesite="strict", httponly=True)
+    response.delete_cookie(
+        key="jn_session",
+        samesite=COOKIE_SAMESITE,
+        httponly=True,
+        secure=COOKIE_SECURE,
+    )
     return {"ok": True}
 
 
