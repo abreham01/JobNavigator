@@ -22,4 +22,4 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: python scrapers/ethiopian_job_scraper.py --push --site palm ngo geez
+        run: python scrapers/ethiopian_job_scraper.py --push
