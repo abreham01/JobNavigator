@@ -2,14 +2,15 @@ name: Ethiopian Job Scraper
 
 on:
   schedule:
-    - cron: '0 */4 * * *'   # every 4 hours (00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC)
-  workflow_dispatch:          # manual trigger button in GitHub Actions tab
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # fixes Node.js 20 deprecation warning
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      PYTHONUNBUFFERED: 1
 
     steps:
       - uses: actions/checkout@v4.2.2
@@ -26,4 +27,4 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: python scraper/ethiopian_job_scraper.py --push
+        run: python -u scraper/ethiopian_job_scraper.py --push
