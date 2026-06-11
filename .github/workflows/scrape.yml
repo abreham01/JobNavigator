@@ -21,7 +21,9 @@ jobs:
 
       - name: Install dependencies
         working-directory: backend
-        run: pip install requests beautifulsoup4 psycopg2-binary python-dotenv curl-cffi
+        run: |
+          pip install requests beautifulsoup4 psycopg2-binary python-dotenv curl-cffi playwright
+          playwright install chromium
 
       - name: Run scraper
         working-directory: backend
