@@ -42,13 +42,10 @@ logger = logging.getLogger("ethiopian_scraper")
 # ---------------------------------------------------------------------------
 
 FINANCE_KEYWORDS = [
-    "finance", "financial", "officer", "accounting", "accountant", "accounts",
-    "audit", "auditor", "budget", "treasury", "fiscal",
+    "finance", "financial", "accounting", "accountant", "accounts",
+    "audit", "auditor", "budget", "treasury",
     "bookkeeping", "bookkeeper", "payroll", "tax", "taxation",
-    "controller", "comptroller", "CFO", "finance officer",
-    "finance manager", "finance director", "finance analyst",
-    "cost", "revenue", "billing", "invoice", "credit",
-    "banking", "bank officer", "teller", "loan", "microfinance",
+    "banking", "teller", "microfinance",
 ]
 
 def _is_finance_job(job: dict) -> bool:
