@@ -41,20 +41,48 @@ logger = logging.getLogger("ethiopian_scraper")
 # FILTER KEYWORDS — Accounting & Finance roles
 # ---------------------------------------------------------------------------
 
-FINANCE_KEYWORDS = [
-    "finance", "financial", "accounting", "accountant", "accounts",
-    "audit", "auditor", "budget", "treasury",
-    "bookkeeping", "bookkeeper", "payroll", "tax", "taxation",
-    "banking", "teller", "microfinance",
+# STRONG: specific enough that a hit anywhere (title OR description) is trustworthy.
+STRONG_FINANCE_KEYWORDS = [
+    "accounting", "accountant", "bookkeeping", "bookkeeper",
+    "payroll", "auditor", "treasury", "microfinance", "taxation",
 ]
 
-def _is_finance_job(job: dict) -> bool:
-    haystack = " ".join([
-        job.get("title", ""),
-        job.get("description", ""),
-        job.get("category", ""),
-    ]).lower()
-    return any(kw.lower() in haystack for kw in FINANCE_KEYWORDS)
+# WEAK: too generic/ambiguous on their own (show up in unrelated jobs via
+# incidental mentions, e.g. "manage the office budget", "core banking system",
+# "IT audit", "taxi driver"). Only trusted when they appear in the job TITLE,
+# since a title like "Tax Officer" or "Budget Analyst" is a real signal.
+WEAK_FINANCE_KEYWORDS = [
+    "finance", "financial", "accounts", "audit", "budget",
+    "tax", "banking", "teller",
+]
+
+def _compile_kw_pattern(keywords: list[str]) -> re.Pattern:
+    escaped = [re.escape(kw) for kw in keywords]
+    return re.compile(r"\b(?:" + "|".join(escaped) + r")\b", re.IGNORECASE)
+
+_STRONG_PATTERN = _compile_kw_pattern(STRONG_FINANCE_KEYWORDS)
+_WEAK_PATTERN = _compile_kw_pattern(WEAK_FINANCE_KEYWORDS)
+
+
+def _is_finance_job(job: dict, debug: bool = False) -> bool:
+    title = job.get("title", "") or ""
+    body = " ".join([job.get("description", "") or "", job.get("category", "") or ""])
+
+    title_match = _STRONG_PATTERN.search(title) or _WEAK_PATTERN.search(title)
+    if title_match:
+        if debug:
+            logger.debug("MATCH (title): %r -> %r", title, title_match.group())
+        return True
+
+    # Description/category only counts for STRONG keywords — avoids pulling in
+    # unrelated jobs that merely mention finance/tax/budget in passing.
+    body_match = _STRONG_PATTERN.search(body)
+    if body_match:
+        if debug:
+            logger.debug("MATCH (body, strong kw): %r -> %r", title, body_match.group())
+        return True
+
+    return False
 
 
 def _clean(t: str) -> str:
